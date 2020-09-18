@@ -42,7 +42,8 @@ class BuyerController extends ResponseApiController
         $validator = Validator::make($request->all(), [
             'name' => 'required',
             'surname' => 'required',
-            'identification' => 'required|unique:buyers'
+            'identification' => 'required|numeric|unique:buyers',
+            'telephone' => 'required|numeric'
         ]);
 
         if($validator->fails()){
@@ -52,6 +53,7 @@ class BuyerController extends ResponseApiController
             $buyer->name = $request->get('name');
             $buyer->surname = $request->get('surname');
             $buyer->identification = $request->get('identification');
+            $buyer->telephone = $request->get('telephone');
             $buyer->save();
 
             $message = $this->sendResponse($buyer, 'Comprador registrado correctamente');
@@ -97,7 +99,8 @@ class BuyerController extends ResponseApiController
         $validator = Validator::make($request->all(), [
             'name' => 'required',
             'surname' => 'required',
-            'identification' => 'required'
+            'identification' => 'required|numeric',
+            'telephone' => 'required|numeric'
         ]);
 
         if($buyer === null){
@@ -108,6 +111,7 @@ class BuyerController extends ResponseApiController
             $buyer->name = $request->get('name');
             $buyer->surname = $request->get('surname');
             $buyer->identification = $request->get('identification');
+            $buyer->telephone = $request->get('telephone');
             $buyer->save();
 
             $message = $this->sendResponse($buyer, 'Comprador actualizado correctamente');
