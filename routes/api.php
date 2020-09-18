@@ -18,5 +18,16 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+//Compradores
+Route::get('buyer', 'BuyerController@index');
+Route::get('buyer/{id}', 'BuyerController@show');
+Route::post('buyer', 'BuyerController@store');
+Route::put('buyer/{id}', 'BuyerController@update');
+Route::delete('buyer/{id}', 'BuyerController@destroy');
 
-Route::resource('buyer', 'BuyerController');
+//Conciertos
+Route::get('concert', 'ConcertController@index');
+Route::post('concert', 'ConcertController@store');
+Route::get('concert/{id}', 'ConcertController@show');
+Route::put('concert/{id}', 'ConcertController@update');
+Route::delete('concert/{id}', 'ConcertController@destroy');
