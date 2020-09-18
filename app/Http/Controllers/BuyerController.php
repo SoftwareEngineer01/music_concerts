@@ -46,7 +46,7 @@ class BuyerController extends ResponseApiController
         ]);
 
         if($validator->fails()){
-            $message = $this->sendError('Error en los datos', [$validator->errors()], 422);
+            $message = $this->sendError('Error de validación', [$validator->errors()], 422);
         }else{
             $buyer = new Buyer();
             $buyer->name = $request->get('name');
@@ -75,7 +75,7 @@ class BuyerController extends ResponseApiController
         if($buyer === null){
             $message = $this->sendError('Error en la consulta', ['El comprador no existe'], 422);
         }else{
-            $message = $this->sendResponse($client, 'Comprador encontrado correctamente');
+            $message = $this->sendResponse($buyer, 'Comprador encontrado correctamente');
         }
 
         return $message;
@@ -110,7 +110,7 @@ class BuyerController extends ResponseApiController
             $buyer->identification = $request->get('identification');
             $buyer->save();
 
-            $message = $this->sendResponse($client, 'Comprador actualizado correctamente');
+            $message = $this->sendResponse($buyer, 'Comprador actualizado correctamente');
         }
 
         return $message;
