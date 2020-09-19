@@ -31,3 +31,10 @@ Route::post('concert', 'ConcertController@store');
 Route::get('concert/{id}', 'ConcertController@show');
 Route::put('concert/{id}', 'ConcertController@update');
 Route::delete('concert/{id}', 'ConcertController@destroy');
+
+//Reservaciones
+Route::get('reservation', 'ReservationController@index');
+Route::post('reservation', 'ReservationController@store');
+Route::get('reservation/{id}', 'ReservationController@show');
+Route::put('reservation/{id}', 'ReservationController@update');
+Route::delete('reservation/{id}', 'ReservationController@destroy');
