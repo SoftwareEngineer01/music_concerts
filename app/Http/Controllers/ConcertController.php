@@ -41,7 +41,7 @@ class ConcertController extends ResponseApiController
 
         $validator = Validator::make($request->all(), [
             'description' => 'required',
-            'date'  => 'required|date_format:Y-m-d H:i:s',
+            'date'  => 'required|date',
             'city'  => 'required',
             'place' => 'required',
             'max_number_people' => 'required'
