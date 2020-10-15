@@ -42,37 +42,55 @@ class ReservationController extends ResponseApiController
     public function store(Request $request)
     {
         $message = null;
+        $number_people = null;
 
-        $validator = Validator::make($request->all(), [
-            'id_buyer' => 'required',
-            'id_concert' => 'required',
-            'date' => 'required|date_format:Y-m-d H:i:s',
-            'number_people' => 'required|numeric',
-            'status' => 'required|in:reservada,pagada,cancelada'
-        ]);
+        try {
+            $buyer = Buyer::where('id', '=', $request->get('id_buyer'))->first();
+            $concert = Concert::where('id', '=', $request->get('id_concert'))->first();
 
-        $buyer = Buyer::where('id', '=', $request->get('id_buyer'))->first();
-        $concert = Concert::where('id', '=', $request->get('id_concert'))->first();
+            $validator = Validator::make($request->all(), [
+                'id_buyer' => 'required',
+                'id_concert' => 'required',
+                'date' => 'required|date',
+                'number_people' => 'required|numeric',
+                'status' => 'required|in:reservada,pagada,cancelada'
+            ]);
 
-        if($validator->fails()){
-            $message = $this->sendError('Error de validación', [$validator->errors()], 422);
-        }elseif($buyer === null || $concert === null){
-            $message = $this->sendError('Error en la consulta', ['El comprador o concierto no existen, valida nuevamente'], 422);
-        }else{
-            $reservation = new Reservation();
-            $reservation->id_buyer = $request->get('id_buyer');
-            $reservation->id_concert = $request->get('id_concert');
-            $reservation->date = $request->get('date');
-            $reservation->number_people = $request->get('number_people');
-            $reservation->ticket_number = rand(0, 100000000);
-            $reservation->status = $request->get('status');
-            $reservation->save();
+            $capacity = $concert->max_number_people;
+            $registered_persons = $concert->total_persons;
+            $number_people = (int)$request->get('number_people');
+            $total = $registered_persons+(int)$request->get('number_people');
+            $places_available = $capacity - $registered_persons;
 
-            $message = $this->sendResponse($reservation, 'La reserva se ha registrado correctamente');
+            if($validator->fails()){
+                $message = $this->sendError('Error de validación', [$validator->errors()], 422);
+            }elseif($buyer === null || $concert === null){
+                $message = $this->sendError('Error en la consulta', ['El comprador o concierto no existen, valida nuevamente'], 422);
+            }elseif($number_people > $capacity || $total > $capacity || $number_people == 0){
+                $message = $this->sendError('Error al registrar la reserva', ['Capacidad total aforo: '.$capacity.' - Cupos disponibles: '.$places_available], 422);
+            }else{
+                $reservation = new Reservation();
+                $reservation->id_buyer = $request->get('id_buyer');
+                $reservation->id_concert = $request->get('id_concert');
+                $reservation->date = $request->get('date');
+                $reservation->ticket_number = rand(0, 100000000);
+                $reservation->status = $request->get('status');
+
+                //Guarda la reserva
+                $reservation->number_people = $request->get('number_people');
+                $reservation->save();
+
+                //Guarda el total de las personas en el concierto
+                $concert->total_persons = $total;
+                $concert->save();
+
+                $message = $this->sendResponse($reservation, 'La reserva se ha registrado correctamente');
+            }
+        } catch (\Throwable $e) {
+                $message =  $this->sendError($e->getMessage(), ['Error en la consulta'],  422);
         }
 
         return $message;
-
     }
 
     /**
@@ -117,7 +135,6 @@ class ReservationController extends ResponseApiController
         $validator = Validator::make($request->all(), [
             'id_buyer' => 'required',
             'id_concert' => 'required',
-            'number_people' => 'required|numeric',
             'status' => 'required|in:reservada,pagada,cancelada'
         ]);
 
@@ -126,13 +143,20 @@ class ReservationController extends ResponseApiController
         }elseif($reservation === null){
             $message = $this->sendError('Error en la consulta', ['La reservación no existe'], 422);
         }else{
+            $concert = Concert::where('id', '=', $reservation->id_concert)->first();
+            $reservation_status = $request->get('status');
+
+            if($reservation_status === "cancelada"){
+                $concert->total_persons -= $reservation->number_people;
+                $concert->save();
+            }
+
             $reservation->id_buyer = $request->get('id_buyer');
             $reservation->id_concert = $request->get('id_concert');
-            $reservation->number_people = $request->get('number_people');
-            $reservation->status = $request->get('status');
+            $reservation->status = $reservation_status;
             $reservation->save();
 
-            $message = $this->sendResponse($reservation, 'Reserva actualizada correctamente');
+            $message = $this->sendResponse($reservation->number_people, 'Reserva actualizada correctamente');
         }
 
         return $message;
@@ -153,6 +177,16 @@ class ReservationController extends ResponseApiController
         if($reservation === null){
             $message = $this->sendError('Error en la consulta', ['No se encontro el registro'], 422);
         }else{
+            $id_concert = $reservation->id_concert;
+            $number_people = $reservation->number_people;
+
+            $concert = Concert::where('id', '=', $id_concert)->first();
+            $registered_persons = $concert->total_persons;
+            $total = $registered_persons-$number_people;
+
+            $concert->total_persons = $total;
+            $concert->save();
+
             $reservation->delete();
             $message = $this->sendResponse($reservation, 'Reserva eliminada correctamente');
         }
