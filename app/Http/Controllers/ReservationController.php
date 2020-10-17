@@ -67,7 +67,7 @@ class ReservationController extends ResponseApiController
             }elseif($buyer === null || $concert === null){
                 $message = $this->sendError('Error en la consulta', ['El comprador o concierto no existen, valida nuevamente'], 422);
             }elseif($number_people > $capacity || $total > $capacity || $number_people == 0){
-                $message = $this->sendError('Error al registrar la reserva', ['Capacidad total aforo: '.$capacity.' - Cupos disponibles: '.$places_available], 422);
+                $message = $this->sendError('Error al registrar la reserva', ['Solo quedan '.$places_available.' cupos disponibles'], 422);
             }else{
                 $reservation = new Reservation();
                 $reservation->id_buyer = $request->get('id_buyer');
