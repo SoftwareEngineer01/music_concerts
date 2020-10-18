@@ -56,6 +56,7 @@ class ConcertController extends ResponseApiController
             $concert->city = $request->get('city');
             $concert->place = $request->get('place');
             $concert->max_number_people = $request->get('max_number_people');
+            $concert->total_persons = 0;
             $concert->save();
 
             $message = $this->sendResponse($concert, 'Concierto agregado correctamente');
