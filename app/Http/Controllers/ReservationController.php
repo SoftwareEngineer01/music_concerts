@@ -103,11 +103,13 @@ class ReservationController extends ResponseApiController
     {
         $message = null;
 
-        $reservation = Reservation::select('reservations.id','buyers.name as buyer','concerts.description as name_concert','reservations.date','reservations.number_people','reservations.ticket_number','reservations.status')
-                                    ->join('buyers', 'reservations.id_buyer', '=', 'buyers.id')
-                                    ->join('concerts', 'reservations.id_concert', '=', 'concerts.id')
-                                    ->where('reservations.id', '=', $id)
-                                    ->first();
+        // $reservation = Reservation::select('reservations.id','buyers.name as buyer','concerts.description as name_concert','reservations.date','reservations.number_people','reservations.ticket_number','reservations.status')
+        //                             ->join('buyers', 'reservations.id_buyer', '=', 'buyers.id')
+        //                             ->join('concerts', 'reservations.id_concert', '=', 'concerts.id')
+        //                             ->where('reservations.id', '=', $id)
+        //                             ->first();
+
+        $reservation = Reservation::find($id);
 
         if($reservation === null){
             $message = $this->sendError('Error en la consulta', ['La reservación no existe'], 422);
@@ -131,6 +133,8 @@ class ReservationController extends ResponseApiController
         $message = null;
 
         $reservation = Reservation::find($id);
+        $buyer = Buyer::where('id', '=', $request->get('id_buyer'))->first();
+        $concert = Concert::where('id', '=', $request->get('id_concert'))->first();
 
         $validator = Validator::make($request->all(), [
             'id_buyer' => 'required',
@@ -138,13 +142,22 @@ class ReservationController extends ResponseApiController
             'status' => 'required|in:reservada,pagada,cancelada'
         ]);
 
+        $capacity = $concert->max_number_people;
+        $registered_persons = $concert->total_persons;
+        $number_people = $reservation->number_people;
+        $total = $registered_persons+$number_people;
+        $places_available = $capacity - $registered_persons;
+
         if($validator->fails()){
             $message = $this->sendError('Error en la validación', [$validator->errors()], 422);
         }elseif($reservation === null){
             $message = $this->sendError('Error en la consulta', ['La reservación no existe'], 422);
+        }elseif($number_people > $capacity || $total > $capacity || $number_people == 0){
+            $message = $this->sendError('Error al registrar la reserva', ['Solo quedan '.$places_available.' cupos disponibles'], 422);
         }else{
             $concert = Concert::where('id', '=', $reservation->id_concert)->first();
             $reservation_status = $request->get('status');
+            $reservation_concert = $request->get('id_concert');
 
             if($reservation_status === "cancelada"){
                 $concert->total_persons -= $reservation->number_people;
@@ -156,7 +169,7 @@ class ReservationController extends ResponseApiController
             $reservation->status = $reservation_status;
             $reservation->save();
 
-            $message = $this->sendResponse($reservation->number_people, 'Reserva actualizada correctamente');
+            $message = $this->sendResponse($reservation, 'Reserva actualizada correctamente');
         }
 
         return $message;
